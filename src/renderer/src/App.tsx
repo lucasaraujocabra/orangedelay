@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG } from '../../shared/types'
 import { DelayControl } from './components/DelayControl'
 import { Meter } from './components/Meter'
 import { SetupPanel } from './components/SetupPanel'
+import { ObsGuide } from './components/ObsGuide'
 import { SetupWizard } from './components/SetupWizard'
 import { LogConsole } from './components/LogConsole'
 
@@ -183,6 +184,8 @@ export default function App(): JSX.Element {
             }}
             onTest={() => window.orange.testConnection()}
           />
+
+          <ObsGuide rtmpPort={config.rtmpPort} />
         </div>
 
         {/* right column: log */}
