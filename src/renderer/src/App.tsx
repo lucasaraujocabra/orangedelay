@@ -13,6 +13,7 @@ import {
 import type { RelayStatus, AppConfig } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
 import { DelayControl } from './components/DelayControl'
+import { FlowLines } from './components/FlowLines'
 import { KeyPanel } from './components/KeyPanel'
 import { ObsGuide } from './components/ObsGuide'
 import { SetupWizard } from './components/SetupWizard'
@@ -142,7 +143,7 @@ export default function App(): JSX.Element {
         <div className="min-h-full flex items-center justify-center p-6 relative">
           <div className="pointer-events-none absolute top-[22%] left-1/2 -translate-x-1/2 w-[520px] h-[300px] bg-energy/10 blur-[140px] rounded-full" />
 
-          <div className="relative w-full max-w-md flex flex-col gap-5">
+          <div className="relative isolate w-full max-w-md flex flex-col gap-5">
             <DelayControl
               delay={delay}
               effectiveDelay={status?.effectiveDelaySeconds ?? 0}
@@ -150,18 +151,23 @@ export default function App(): JSX.Element {
               onSet={applyDelay}
             />
 
-            {/* GO LIVE */}
-            <button
-              onClick={toggleLive}
-              className={`corner relative py-5 rounded-pixel font-mono uppercase tracking-[0.22em] font-bold text-base flex items-center justify-center gap-3 transition-colors ${
-                live
-                  ? 'bg-surface2 border border-energy text-energy hover:bg-[#1a0d05]'
-                  : 'bg-energy border border-energy text-black hover:bg-[#ff7a45]'
-              }`}
-            >
-              {live ? <Power size={18} /> : <Radio size={18} />}
-              {live ? 'SAIR DO AR' : 'ENTRAR NO AR'}
-            </button>
+            {/* GO LIVE — com linhas de fluxo animadas no fundo */}
+            <div className="relative py-6">
+              <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] max-w-[94vw] h-[200px] -z-10">
+                <FlowLines active={obs || live} />
+              </div>
+              <button
+                onClick={toggleLive}
+                className={`corner relative z-10 w-full py-5 rounded-pixel font-mono uppercase tracking-[0.22em] font-bold text-base flex items-center justify-center gap-3 transition-colors ${
+                  live
+                    ? 'bg-surface2 border border-energy text-energy hover:bg-[#1a0d05]'
+                    : 'bg-energy border border-energy text-black hover:bg-[#ff7a45]'
+                }`}
+              >
+                {live ? <Power size={18} /> : <Radio size={18} />}
+                {live ? 'SAIR DO AR' : 'ENTRAR NO AR'}
+              </button>
+            </div>
 
             {!hasKey && (
               <button
