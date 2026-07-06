@@ -1,0 +1,41 @@
+{
+  "name": "orangedelay",
+  "version": "0.1.0",
+  "description": "OrangeDelay — RTMP relay with live-adjustable delay between OBS and Twitch. Anti stream-sniping.",
+  "main": "./out/main/index.js",
+  "author": "OrangeDelay",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "generate:icon": "node scripts/generate-icon.cjs",
+    "build": "npm run generate:icon && electron-vite build && electron-builder",
+    "build:win": "npm run generate:icon && electron-vite build && electron-builder --win",
+    "build:dir": "electron-vite build && electron-builder --dir",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "ffmpeg-static": "^5.2.0",
+    "node-media-server": "^2.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "electron": "^31.1.0",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.3.0",
+    "lucide-react": "^0.400.0",
+    "postcss": "^8.4.39",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1"
+  }
+}

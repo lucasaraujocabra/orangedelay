@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OrangeDelay — Delay ao vivo entre OBS e Twitch. Anti stream-sniping.</title>
+    <meta
+      name="description"
+      content="OrangeDelay fica entre o OBS e a Twitch e segura seu stream num buffer com o delay que você escolher — ajustável AO VIVO, sem reiniciar o OBS. Proteção contra stream sniping em Valorant e CS2."
+    />
+    <meta property="og:title" content="OrangeDelay — Anti stream-sniping relay" />
+    <meta
+      property="og:description"
+      content="Delay de stream ajustável ao vivo, sem derrubar a transmissão. Snipers assistem o passado, você joga o presente."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              void: '#000000',
+              surface: '#0A0A0A',
+              surface2: '#111111',
+              edge: '#1C1C1C',
+              energy: '#FF5E1F',
+              'energy-dim': '#B33E12',
+              live: '#22C55E',
+              muted: '#6B6B6B'
+            },
+            fontFamily: {
+              mono: ['"JetBrains Mono"', 'monospace'],
+              display: ['"Space Grotesk"', 'system-ui', 'sans-serif']
+            },
+            borderRadius: { pixel: '2px' }
+          }
+        }
+      }
+    </script>
+    <style>
+      html { scroll-behavior: smooth; }
+      body { background: #000; }
+      .grid-bg {
+        background-image:
+          linear-gradient(rgba(255, 94, 31, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 94, 31, 0.05) 1px, transparent 1px);
+        background-size: 44px 44px;
+      }
+      .glow { box-shadow: 0 0 120px -20px rgba(255, 94, 31, 0.45); }
+      .label { font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+        font-size: 10px; letter-spacing: 0.25em; color: #6B6B6B; }
+      .corner { position: relative; }
+      .corner::before, .corner::after { content: '+'; position: absolute; color: #FF5E1F;
+        font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1; }
+      .corner::before { top: -7px; left: -7px; }
+      .corner::after { bottom: -7px; right: -7px; }
+      ::selection { background: #FF5E1F; color: #000; }
+      .fade-edge { -webkit-mask-image: linear-gradient(to bottom, #000 85%, transparent); }
+    </style>
+  </head>
+  <body class="bg-void text-white font-display antialiased overflow-x-hidden">
+    <!-- ============================================================ NAV -->
+    <header class="fixed top-0 inset-x-0 z-50 border-b border-edge/70 bg-void/80 backdrop-blur">
+      <nav class="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
+        <a href="#top" class="flex items-center gap-3">
+          <span class="w-8 h-8 border border-energy rounded-pixel grid place-items-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF5E1F" stroke="#FF5E1F"
+              stroke-width="1.5" stroke-linejoin="round"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10 13 2"/></svg>
+          </span>
+          <span class="font-bold text-lg tracking-tight">ORANGE<span class="text-energy">DELAY</span></span>
+        </a>
+        <div class="hidden md:flex items-center gap-8 label !text-[11px] !text-neutral-400">
+          <a href="#problema" class="hover:text-energy transition">O_PROBLEMA</a>
+          <a href="#como" class="hover:text-energy transition">COMO_FUNCIONA</a>
+          <a href="#recursos" class="hover:text-energy transition">RECURSOS</a>
+        </div>
+        <a href="#download"
+          class="font-mono uppercase text-xs tracking-widest bg-energy text-black font-bold px-5 py-2.5 rounded-pixel hover:bg-[#ff7a45] transition">
+          Baixar
+        </a>
+      </nav>
+    </header>
+
+    <!-- ============================================================ 01 HERO -->
+    <section id="top" class="relative grid-bg pt-32 pb-24 px-6 overflow-hidden">
+      <div class="absolute -top-40 right-0 w-[500px] h-[500px] bg-energy/20 blur-[160px] rounded-full pointer-events-none"></div>
+      <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative">
+        <div class="flex flex-col gap-7">
+          <div class="flex items-center gap-3">
+            <span class="label">SECTION_01 //</span>
+            <span class="label !text-energy flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-energy rounded-full animate-pulse"></span> RTMP_RELAY · ANTI_SNIPE
+            </span>
+          </div>
+          <h1 class="font-bold text-5xl md:text-6xl leading-[1.05] tracking-tight">
+            Snipers assistem o<br /><span class="text-energy">passado</span>. Você joga o
+            <span class="text-energy">presente</span>.
+          </h1>
+          <p class="text-neutral-300 text-lg leading-relaxed max-w-xl">
+            O OrangeDelay fica entre o seu OBS e a Twitch, segura a transmissão num buffer e
+            reenvia com o delay que você escolher — <span class="text-white font-medium">ajustável ao vivo</span>,
+            sem reiniciar o OBS e sem derrubar a stream.
+          </p>
+          <div class="flex flex-wrap items-center gap-4 pt-2">
+            <a href="#download"
+              class="group font-mono uppercase text-sm tracking-widest bg-energy text-black font-bold px-7 py-4 rounded-pixel hover:bg-[#ff7a45] transition flex items-center gap-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              Baixar para Windows
+            </a>
+            <a href="#como"
+              class="font-mono uppercase text-sm tracking-widest border border-edge text-white px-7 py-4 rounded-pixel hover:border-energy hover:text-energy transition">
+              Como funciona
+            </a>
+          </div>
+          <div class="flex flex-wrap gap-x-6 gap-y-2 pt-4 label !text-neutral-500">
+            <span class="flex items-center gap-2"><span class="text-live">✓</span> Sem re-encode · CPU baixa</span>
+            <span class="flex items-center gap-2"><span class="text-live">✓</span> FFmpeg embutido</span>
+            <span class="flex items-center gap-2"><span class="text-live">✓</span> Valorant · CS2</span>
+          </div>
+        </div>
+
+        <!-- dashboard mockup -->
+        <div class="corner relative">
+          <div class="glow rounded-pixel border border-edge bg-surface overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-edge">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 border border-energy rounded-pixel grid place-items-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF5E1F"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10 13 2"/></svg>
+                </span>
+                <span class="font-bold text-sm">ORANGE<span class="text-energy">DELAY</span></span>
+              </div>
+              <div class="flex items-center gap-2 border border-live/60 rounded-pixel px-3 py-1.5">
+                <span class="w-2 h-2 bg-live rounded-full"></span>
+                <span class="font-mono text-xs font-bold text-live">LIVE</span>
+              </div>
+            </div>
+            <div class="p-5 space-y-4">
+              <div class="border border-edge rounded-pixel bg-void p-5">
+                <div class="flex items-center justify-between"><span class="label">SECTION_02 // DELAY_BUFFER</span><span class="label !text-energy">APPLIED_LIVE</span></div>
+                <div class="flex items-end justify-center gap-2 py-3">
+                  <span class="font-bold text-7xl tabular-nums leading-none">30</span>
+                  <span class="font-mono text-energy text-xl mb-3">s</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                  <div class="border border-edge rounded-pixel py-2 text-center"><div class="font-bold text-sm">0s</div><div class="label !text-[8px]">LIVE</div></div>
+                  <div class="border border-edge rounded-pixel py-2 text-center"><div class="font-bold text-sm">15s</div><div class="label !text-[8px]">QUICK</div></div>
+                  <div class="border border-energy bg-[#1a0d05] text-energy rounded-pixel py-2 text-center"><div class="font-bold text-sm">30s</div><div class="label !text-[8px] !text-energy">MEDIUM</div></div>
+                  <div class="border border-edge rounded-pixel py-2 text-center"><div class="font-bold text-sm">60s</div><div class="label !text-[8px]">LONG</div></div>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="border border-edge rounded-pixel bg-void px-3 py-3"><div class="label">IN</div><div class="font-mono text-base mt-1">6.480<span class="text-muted text-[10px]"> kbps</span></div></div>
+                <div class="border border-edge rounded-pixel bg-void px-3 py-3"><div class="label">OUT</div><div class="font-mono text-base mt-1">6.480<span class="text-muted text-[10px]"> kbps</span></div></div>
+                <div class="border border-edge rounded-pixel bg-void px-3 py-3"><div class="label">UPTIME</div><div class="font-mono text-base mt-1">01:24:07</div></div>
+              </div>
+              <div class="bg-energy text-black text-center font-mono uppercase text-xs tracking-[0.25em] font-bold py-3.5 rounded-pixel">
+                Enable Delay // Go Live
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 02 PROBLEMA -->
+    <section id="problema" class="border-t border-edge px-6 py-24">
+      <div class="max-w-6xl mx-auto">
+        <span class="label">SECTION_02 // O_PROBLEMA</span>
+        <div class="grid lg:grid-cols-2 gap-14 mt-6 items-center">
+          <div>
+            <h2 class="font-bold text-4xl md:text-5xl leading-tight tracking-tight">
+              Stream sniping ganha<br />a partida pra ele.
+            </h2>
+            <p class="text-neutral-300 text-lg leading-relaxed mt-6">
+              Em Valorant e CS2, quem assiste sua live sabe sua rotação, seu economy e sua
+              posição em tempo real. Sem delay, o snipe é gratuito. Com um delay fixo, você
+              trava a transmissão pra mudar. O OrangeDelay resolve os dois: buffer real,
+              ajustável na hora, sem cortar nada.
+            </p>
+            <div class="mt-8 grid grid-cols-3 gap-4">
+              <div class="corner border border-edge rounded-pixel bg-surface p-4">
+                <div class="text-3xl font-bold text-energy">0s</div>
+                <div class="label mt-1">de downtime ao trocar</div>
+              </div>
+              <div class="corner border border-edge rounded-pixel bg-surface p-4">
+                <div class="text-3xl font-bold text-energy">~0%</div>
+                <div class="label mt-1">de cpu extra (copy)</div>
+              </div>
+              <div class="corner border border-edge rounded-pixel bg-surface p-4">
+                <div class="text-3xl font-bold text-energy">180s</div>
+                <div class="label mt-1">de buffer máximo</div>
+              </div>
+            </div>
+          </div>
+          <!-- sniper timeline diagram -->
+          <div class="corner border border-edge rounded-pixel bg-surface p-6 font-mono text-sm">
+            <div class="label mb-5">TIMELINE // VOCÊ vs SNIPER</div>
+            <div class="space-y-6">
+              <div>
+                <div class="flex items-center justify-between mb-2"><span class="text-white">VOCÊ (ao vivo)</span><span class="text-live">agora</span></div>
+                <div class="h-2 rounded-pixel bg-live/80"></div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-2"><span class="text-white">SNIPER (na Twitch)</span><span class="text-energy">−30s atrás</span></div>
+                <div class="h-2 rounded-pixel bg-edge relative overflow-hidden">
+                  <div class="absolute inset-y-0 left-0 w-[62%] bg-energy/80"></div>
+                </div>
+                <p class="text-muted text-xs mt-3 leading-relaxed">
+                  Ele só vê onde você <span class="text-white">esteve</span> há 30 segundos.
+                  A informação chega tarde demais pra te caçar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 03 COMO FUNCIONA -->
+    <section id="como" class="border-t border-edge px-6 py-24 grid-bg">
+      <div class="max-w-6xl mx-auto">
+        <span class="label">SECTION_03 // COMO_FUNCIONA</span>
+        <h2 class="font-bold text-4xl md:text-5xl leading-tight tracking-tight mt-6 max-w-2xl">
+          Entra no meio do caminho. Você nem sente.
+        </h2>
+
+        <!-- flow -->
+        <div class="mt-12 flex flex-col md:flex-row items-stretch gap-4 font-mono">
+          <div class="flex-1 corner border border-edge rounded-pixel bg-surface p-6 text-center">
+            <div class="label">FONTE</div>
+            <div class="text-2xl font-bold mt-3">OBS</div>
+            <div class="text-muted text-xs mt-2">transmite pro localhost</div>
+          </div>
+          <div class="hidden md:flex items-center text-energy text-2xl">──▶</div>
+          <div class="flex-[1.4] corner border border-energy rounded-pixel bg-[#140a05] p-6 text-center glow">
+            <div class="label !text-energy">RELAY + BUFFER</div>
+            <div class="text-2xl font-bold mt-3 text-energy">OrangeDelay</div>
+            <div class="text-neutral-300 text-xs mt-2">segura N segundos e reenvia</div>
+          </div>
+          <div class="hidden md:flex items-center text-energy text-2xl">──▶</div>
+          <div class="flex-1 corner border border-edge rounded-pixel bg-surface p-6 text-center">
+            <div class="label">DESTINO</div>
+            <div class="text-2xl font-bold mt-3">Twitch</div>
+            <div class="text-muted text-xs mt-2">ao vivo, com delay</div>
+          </div>
+        </div>
+
+        <!-- steps -->
+        <div class="mt-12 grid md:grid-cols-3 gap-6">
+          <div class="border border-edge rounded-pixel bg-surface p-6">
+            <div class="label !text-energy">STEP_01</div>
+            <h3 class="font-bold text-xl mt-3">Aponta o OBS</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">
+              Servidor personalizado <span class="font-mono text-white">rtmp://localhost:1935/live</span>
+              e qualquer stream key. Pronto em 30 segundos.
+            </p>
+          </div>
+          <div class="border border-edge rounded-pixel bg-surface p-6">
+            <div class="label !text-energy">STEP_02</div>
+            <h3 class="font-bold text-xl mt-3">Escolhe o delay</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">
+              Presets de 0/15/30/60s ou ajuste fino no stepper. Cola sua key da Twitch
+              (fica salva e mascarada) e vai ao ar.
+            </p>
+          </div>
+          <div class="border border-edge rounded-pixel bg-surface p-6">
+            <div class="label !text-energy">STEP_03</div>
+            <h3 class="font-bold text-xl mt-3">Muda ao vivo</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">
+              Sentiu que tem sniper? Sobe o delay na hora — ou usa o atalho global
+              <span class="font-mono text-white">Ctrl+Alt+D</span>. A stream não cai.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 04 RECURSOS -->
+    <section id="recursos" class="border-t border-edge px-6 py-24">
+      <div class="max-w-6xl mx-auto">
+        <span class="label">SECTION_04 // RECURSOS</span>
+        <h2 class="font-bold text-4xl md:text-5xl leading-tight tracking-tight mt-6">
+          Feito pra competitivo.
+        </h2>
+        <div class="mt-12 grid md:grid-cols-3 gap-px bg-edge border border-edge rounded-pixel overflow-hidden">
+          <!-- each cell -->
+          <div class="bg-surface p-7 hover:bg-surface2 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5E1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+            <h3 class="font-bold text-lg mt-4">Delay ajustável ao vivo</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">Muda de 15s pra 60s no meio da partida sem reiniciar o OBS nem derrubar a Twitch.</p>
+          </div>
+          <div class="bg-surface p-7 hover:bg-surface2 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5E1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <h3 class="font-bold text-lg mt-4">CPU quase zero</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">Relay por cópia de stream (sem re-encode). Seu FPS no jogo continua intacto.</p>
+          </div>
+          <div class="bg-surface p-7 hover:bg-surface2 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5E1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M6 12h.01M18 12h.01M8 16h8"/></svg>
+            <h3 class="font-bold text-lg mt-4">Atalho global</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">Ctrl+Alt+D liga/desliga o delay de dentro do jogo, sem tirar o foco.</p>
+          </div>
+          <div class="bg-surface p-7 hover:bg-surface2 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5E1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            <h3 class="font-bold text-lg mt-4">Presets + ajuste fino</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">0s LIVE, 15s QUICK, 30s MEDIUM, 60s LONG — ou stepper de ±1/±5s.</p>
+          </div>
+          <div class="bg-surface p-7 hover:bg-surface2 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5E1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            <h3 class="font-bold text-lg mt-4">FFmpeg embutido</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">Nada pra instalar além do app. O binário já vem no pacote.</p>
+          </div>
+          <div class="bg-surface p-7 hover:bg-surface2 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5E1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <h3 class="font-bold text-lg mt-4">Instalador ou portátil</h3>
+            <p class="text-neutral-400 text-sm mt-2 leading-relaxed">.exe com instalador (NSIS) ou versão portable que roda de qualquer pasta.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 05 DOWNLOAD -->
+    <section id="download" class="border-t border-edge px-6 py-28 grid-bg relative overflow-hidden">
+      <div class="absolute inset-x-0 -bottom-40 h-[400px] bg-energy/10 blur-[160px] pointer-events-none"></div>
+      <div class="max-w-3xl mx-auto text-center relative">
+        <span class="label">SECTION_05 // DOWNLOAD</span>
+        <h2 class="font-bold text-4xl md:text-6xl leading-[1.05] tracking-tight mt-6">
+          Baixa e testa<br />na sua próxima live.
+        </h2>
+        <p class="text-neutral-300 text-lg mt-6 max-w-xl mx-auto">
+          Windows 10/11 · 64-bit. Grátis pra testar. Sem cadastro.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+          <a href="downloads/OrangeDelay-Setup.exe" download
+            class="w-full sm:w-auto font-mono uppercase text-sm tracking-widest bg-energy text-black font-bold px-8 py-4 rounded-pixel hover:bg-[#ff7a45] transition flex items-center justify-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Instalador .exe
+          </a>
+          <a href="downloads/OrangeDelay-Portable.exe" download
+            class="w-full sm:w-auto font-mono uppercase text-sm tracking-widest border border-edge text-white px-8 py-4 rounded-pixel hover:border-energy hover:text-energy transition flex items-center justify-center gap-3">
+            Versão portátil
+          </a>
+        </div>
+        <p class="label !text-neutral-600 mt-8">
+          v0.1.0 · MVP · reporte bugs pro dev
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ FOOTER -->
+    <footer class="border-t border-edge px-6 py-10">
+      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="w-7 h-7 border border-energy rounded-pixel grid place-items-center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#FF5E1F"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10 13 2"/></svg>
+          </span>
+          <span class="font-bold text-sm">ORANGE<span class="text-energy">DELAY</span></span>
+        </div>
+        <p class="label !text-neutral-600">© 2026 OrangeDelay · Anti stream-sniping relay</p>
+      </div>
+    </footer>
+  </body>
+</html>

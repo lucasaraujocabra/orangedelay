@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #000000;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* thin terminal scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1c1c1c;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .pixel-btn {
+    @apply font-mono uppercase tracking-wider text-xs border border-edge bg-surface2 text-white
+           px-4 py-2 rounded-pixel transition-colors duration-100
+           hover:border-energy hover:text-energy active:translate-y-px;
+  }
+  .pixel-btn-active {
+    @apply border-energy text-energy bg-[#1a0d05];
+  }
+  .pixel-btn-primary {
+    @apply font-mono uppercase tracking-widest border border-energy bg-energy text-black
+           font-bold rounded-pixel hover:bg-[#ff7a45] transition-colors;
+  }
+  .panel {
+    @apply relative border border-edge bg-surface rounded-pixel;
+  }
+  .label-mono {
+    @apply font-mono uppercase text-[10px] tracking-[0.2em] text-muted;
+  }
+}
+
+/* corner tick marker "+" */
+.corner::before,
+.corner::after {
+  content: '+';
+  position: absolute;
+  color: #ff5e1f;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+}
+.corner::before {
+  top: -6px;
+  left: -6px;
+}
+.corner::after {
+  bottom: -6px;
+  right: -6px;
+}
