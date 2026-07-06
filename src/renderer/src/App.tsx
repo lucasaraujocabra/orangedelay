@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { Radio, Power, Circle, Clock, Zap } from 'lucide-react'
+import {
+  Radio,
+  Power,
+  Circle,
+  Clock,
+  Zap,
+  KeyRound,
+  MonitorPlay,
+  ArrowDownToLine,
+  ArrowUpFromLine
+} from 'lucide-react'
 import type { RelayStatus, AppConfig } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
 import { DelayControl } from './components/DelayControl'
-import { Meter } from './components/Meter'
-import { SetupPanel } from './components/SetupPanel'
+import { KeyPanel } from './components/KeyPanel'
 import { ObsGuide } from './components/ObsGuide'
 import { SetupWizard } from './components/SetupWizard'
-import { LogConsole } from './components/LogConsole'
+import { Modal } from './components/Modal'
 
 function fmtUptime(s: number): string {
   const h = Math.floor(s / 3600)
@@ -21,10 +30,11 @@ export default function App(): JSX.Element {
   const [status, setStatus] = useState<RelayStatus | null>(null)
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG)
   const [delay, setDelay] = useState(DEFAULT_CONFIG.delaySeconds)
-  const [logs, setLogs] = useState<string[]>([])
   const [hasKey, setHasKey] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const [ready, setReady] = useState(false)
+  const [modal, setModal] = useState<null | 'key' | 'obs'>(null)
+  const [startError, setStartError] = useState<string | null>(null)
   const bootstrapped = useRef(false)
 
   useEffect(() => {
@@ -37,42 +47,35 @@ export default function App(): JSX.Element {
       setHasKey(!!cfg.streamKey)
       setShowWizard(!cfg.setupComplete)
       setReady(true)
-      const st = await window.orange.getStatus()
-      setStatus(st)
+      setStatus(await window.orange.getStatus())
     })()
 
     const offStatus = window.orange.onStatus((s) => {
       setStatus(s)
-      // keep the staged delay in sync if changed via hotkey/main
-      setDelay((d) => (s.delaySeconds !== d && !s.pushingToTwitch ? d : s.delaySeconds))
+      setDelay((d) => (s.pushingToTwitch ? s.delaySeconds : d))
     })
-    const offLog = window.orange.onLog((line) => {
-      setLogs((prev) => [...prev.slice(-200), line])
-    })
-    return () => {
-      offStatus()
-      offLog()
-    }
+    return () => offStatus()
   }, [])
 
   async function applyDelay(seconds: number): Promise<void> {
     setDelay(seconds)
-    const applied = await window.orange.setDelay(seconds)
-    setDelay(applied)
+    setDelay(await window.orange.setDelay(seconds))
   }
 
   async function toggleLive(): Promise<void> {
+    setStartError(null)
     if (status?.pushingToTwitch || status?.state === 'RELAYING') {
       await window.orange.stopRelay()
     } else {
       const r = await window.orange.startRelay()
-      if (!r.ok) setLogs((prev) => [...prev, `Não foi possível entrar no ar: ${r.error}`])
+      if (!r.ok) setStartError(r.error ?? 'Não foi possível entrar no ar.')
     }
   }
 
   const live = status?.pushingToTwitch ?? false
   const obs = status?.obsConnected ?? false
   const state = status?.state ?? 'OFFLINE'
+  const err = startError || status?.lastError
 
   if (!ready) return <div className="h-full w-full bg-void" />
 
@@ -110,8 +113,13 @@ export default function App(): JSX.Element {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <StatusPill label="OBS" ok={obs} okText="CONECTADO" offText="AGUARDANDO" />
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-2">
+            <span className="label-mono">OBS</span>
+            <span className={`font-mono text-xs font-bold ${obs ? 'text-live' : 'text-muted'}`}>
+              {obs ? 'CONECTADO' : 'AGUARDANDO'}
+            </span>
+          </div>
           <div
             className={`flex items-center gap-2 px-4 py-2 border rounded-pixel ${
               live ? 'border-live' : 'border-edge'
@@ -129,96 +137,140 @@ export default function App(): JSX.Element {
         </div>
       </header>
 
-      {/* ---------------------------------------------------------- body */}
-      <div className="flex-1 grid grid-cols-[1fr_400px] min-h-0">
-        {/* left column */}
-        <div className="flex flex-col gap-4 p-6 overflow-y-auto">
-          <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
+      {/* ---------------------------------------------------------- body (centered) */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="min-h-full flex items-center justify-center p-6 relative">
+          <div className="pointer-events-none absolute top-[22%] left-1/2 -translate-x-1/2 w-[520px] h-[300px] bg-energy/10 blur-[140px] rounded-full" />
+
+          <div className="relative w-full max-w-md flex flex-col gap-5">
             <DelayControl
               delay={delay}
               effectiveDelay={status?.effectiveDelaySeconds ?? 0}
               live={live}
               onSet={applyDelay}
             />
-            <div className="flex flex-col gap-4 w-[210px]">
-              <div className="panel corner p-4 flex flex-col gap-1">
-                <span className="label-mono flex items-center gap-2">
-                  <Clock size={12} className="text-energy" /> TEMPO NO AR
-                </span>
-                <span className="font-mono text-2xl tabular-nums">
-                  {fmtUptime(status?.uptimeSeconds ?? 0)}
-                </span>
-              </div>
-              <Meter dir="IN" kbps={status?.bitrateInKbps ?? 0} />
-              <Meter dir="OUT" kbps={status?.bitrateOutKbps ?? 0} />
+
+            {/* GO LIVE */}
+            <button
+              onClick={toggleLive}
+              className={`corner relative py-5 rounded-pixel font-mono uppercase tracking-[0.22em] font-bold text-base flex items-center justify-center gap-3 transition-colors ${
+                live
+                  ? 'bg-surface2 border border-energy text-energy hover:bg-[#1a0d05]'
+                  : 'bg-energy border border-energy text-black hover:bg-[#ff7a45]'
+              }`}
+            >
+              {live ? <Power size={18} /> : <Radio size={18} />}
+              {live ? 'SAIR DO AR' : 'ENTRAR NO AR'}
+            </button>
+
+            {!hasKey && (
+              <button
+                onClick={() => setModal('key')}
+                className="font-mono text-[11px] text-energy text-center hover:underline"
+              >
+                Configure sua chave da Twitch antes de entrar no ar →
+              </button>
+            )}
+            {err && <p className="font-mono text-[11px] text-energy text-center">{err}</p>}
+
+            {/* stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <Stat
+                icon={<ArrowDownToLine size={12} />}
+                label="IN"
+                value={status?.bitrateInKbps ? status.bitrateInKbps.toLocaleString() : '—'}
+                unit="kbps"
+                active={!!status?.bitrateInKbps}
+              />
+              <Stat
+                icon={<ArrowUpFromLine size={12} />}
+                label="OUT"
+                value={status?.bitrateOutKbps ? status.bitrateOutKbps.toLocaleString() : '—'}
+                unit="kbps"
+                active={!!status?.bitrateOutKbps}
+              />
+              <Stat
+                icon={<Clock size={12} />}
+                label="NO AR"
+                value={fmtUptime(status?.uptimeSeconds ?? 0)}
+                active={live}
+              />
             </div>
-          </div>
 
-          {/* GO LIVE */}
-          <button
-            onClick={toggleLive}
-            className={`corner relative py-5 rounded-pixel font-mono uppercase tracking-[0.25em] font-bold text-base flex items-center justify-center gap-3 transition-colors ${
-              live
-                ? 'bg-surface2 border border-energy text-energy hover:bg-[#1a0d05]'
-                : 'bg-energy border border-energy text-black hover:bg-[#ff7a45]'
-            }`}
-          >
-            {live ? <Power size={18} /> : <Radio size={18} />}
-            {live ? 'PARAR DELAY // SAIR DO AR' : 'ATIVAR DELAY // ENTRAR NO AR'}
-          </button>
-          {!hasKey && (
-            <p className="font-mono text-[11px] text-energy text-center">
-              Configure sua stream key da Twitch abaixo antes de entrar no ar.
+            {/* secondary actions -> modals */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setModal('key')}
+                className="pixel-btn flex items-center justify-center gap-2 py-3 relative"
+              >
+                <KeyRound size={15} />
+                CHAVE DA TWITCH
+                <span
+                  className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${
+                    hasKey ? 'bg-live' : 'bg-energy'
+                  }`}
+                />
+              </button>
+              <button
+                onClick={() => setModal('obs')}
+                className="pixel-btn flex items-center justify-center gap-2 py-3"
+              >
+                <MonitorPlay size={15} />
+                CONFIGURAR NO OBS
+              </button>
+            </div>
+
+            <p className="label-mono text-center">
+              ATALHO GLOBAL · <span className="text-energy">CTRL + ALT + D</span> LIGA/DESLIGA
             </p>
-          )}
-          {status?.lastError && (
-            <p className="font-mono text-[11px] text-energy text-center">{status.lastError}</p>
-          )}
+          </div>
+        </div>
+      </main>
 
-          <SetupPanel
+      {/* ---------------------------------------------------------- modals */}
+      {modal === 'key' && (
+        <Modal title="Chave da Twitch" tag="ORANGEDELAY // CONFIG" onClose={() => setModal(null)}>
+          <KeyPanel
             hasKey={hasKey}
-            rtmpPort={config.rtmpPort}
             onSaveKey={async (k) => {
               await window.orange.setStreamKey(k)
               setHasKey(true)
             }}
             onTest={() => window.orange.testConnection()}
           />
-
+        </Modal>
+      )}
+      {modal === 'obs' && (
+        <Modal title="Como configurar no OBS" tag="ORANGEDELAY // GUIA" onClose={() => setModal(null)}>
           <ObsGuide rtmpPort={config.rtmpPort} />
-        </div>
-
-        {/* right column: log */}
-        <div className="border-l border-edge p-6 flex flex-col min-h-0">
-          <LogConsole lines={logs} />
-          <div className="mt-4 panel corner px-4 py-3">
-            <span className="label-mono">ATALHO</span>
-            <p className="font-mono text-xs text-neutral-300 mt-1">
-              <span className="text-energy">Ctrl + Alt + D</span> — liga/desliga o delay
-            </p>
-          </div>
-        </div>
-      </div>
+        </Modal>
+      )}
     </div>
   )
 }
 
-function StatusPill({
+function Stat({
+  icon,
   label,
-  ok,
-  okText,
-  offText
+  value,
+  unit,
+  active
 }: {
+  icon: JSX.Element
   label: string
-  ok: boolean
-  okText: string
-  offText: string
+  value: string
+  unit?: string
+  active?: boolean
 }): JSX.Element {
   return (
-    <div className="flex items-center gap-2">
-      <span className="label-mono">{label}</span>
-      <span className={`font-mono text-xs font-bold ${ok ? 'text-live' : 'text-muted'}`}>
-        {ok ? okText : offText}
+    <div className="border border-edge rounded-pixel bg-surface px-3 py-2.5 flex flex-col gap-1">
+      <span className={`label-mono flex items-center gap-1.5 ${active ? '!text-energy' : ''}`}>
+        {icon}
+        {label}
+      </span>
+      <span className="font-mono text-base tabular-nums text-white leading-none">
+        {value}
+        {unit && <span className="text-muted text-[10px] ml-1">{unit}</span>}
       </span>
     </div>
   )

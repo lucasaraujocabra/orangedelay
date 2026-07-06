@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { MonitorPlay, Copy, Check, KeyRound, Radio } from 'lucide-react'
+import { Copy, Check, KeyRound, Radio } from 'lucide-react'
 
 interface Props {
   rtmpPort: number
@@ -21,16 +21,11 @@ export function ObsGuide({ rtmpPort }: Props): JSX.Element {
   }
 
   return (
-    <div className="panel corner p-5 flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <span className="label-mono">SEÇÃO_04 // COMO_CONFIGURAR_NO_OBS</span>
-        <span className="label-mono">GUIA</span>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <MonitorPlay size={20} className="text-energy" strokeWidth={1.5} />
-        <h2 className="font-display font-bold text-lg">Como configurar no OBS</h2>
-      </div>
+    <div className="flex flex-col gap-5">
+      <p className="font-mono text-xs text-muted leading-relaxed">
+        O OBS envia o vídeo pro OrangeDelay (aqui no seu PC), e o app reenvia pra Twitch com o
+        delay. Configure o OBS assim:
+      </p>
 
       {/* passos */}
       <ol className="flex flex-col gap-3">
