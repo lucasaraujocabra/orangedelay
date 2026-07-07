@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { KeyRound, Check, Loader2, ShieldCheck, ShieldAlert, ExternalLink } from 'lucide-react'
+import { KeyRound, Check, Loader2, ShieldCheck, ShieldAlert, QrCode } from 'lucide-react'
 import type { LicenseStatus } from '../../../shared/types'
 
 interface Props {
   status: LicenseStatus
   onSetKey: (key: string) => Promise<LicenseStatus>
   onCheckout: (plan: 'monthly' | 'annual') => void
+  onPix: (period: 'month' | 'year') => void
   onChange: (s: LicenseStatus) => void
 }
 
@@ -15,7 +16,7 @@ const PLAN_LABEL: Record<string, string> = {
   annual: 'Anual'
 }
 
-export function LicenseModal({ status, onSetKey, onCheckout, onChange }: Props): JSX.Element {
+export function LicenseModal({ status, onSetKey, onCheckout, onPix, onChange }: Props): JSX.Element {
   const [key, setKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -93,38 +94,50 @@ export function LicenseModal({ status, onSetKey, onCheckout, onChange }: Props):
         {err && <span className="font-mono text-xs text-energy">{err}</span>}
       </div>
 
-      {/* assinar */}
+      {/* pagar */}
       <div className="border-t border-edge pt-5">
-        <span className="label-mono">ASSINAR — PIX OU CARTÃO</span>
+        <span className="label-mono">PAGAR — PIX (QR), CARTÃO OU BOLETO</span>
         <div className="grid grid-cols-2 gap-3 mt-3">
-          <button
-            onClick={() => onCheckout('monthly')}
-            className="border border-edge rounded-pixel p-4 text-left hover:border-energy transition group"
-          >
+          <div className="border border-edge rounded-pixel p-4">
             <div className="label-mono">MENSAL</div>
             <div className="font-bold text-2xl mt-1">
               R$ 9,99<span className="text-muted text-xs font-mono">/mês</span>
             </div>
-            <span className="label-mono !text-energy flex items-center gap-1 mt-2">
-              ASSINAR <ExternalLink size={11} />
-            </span>
-          </button>
-          <button
-            onClick={() => onCheckout('annual')}
-            className="border border-energy rounded-pixel p-4 text-left bg-[#140a05] hover:bg-[#1a0d05] transition"
-          >
+            <button
+              onClick={() => onPix('month')}
+              className="w-full mt-3 pixel-btn flex items-center justify-center gap-1.5 py-2.5"
+            >
+              <QrCode size={13} /> PAGAR NO PIX
+            </button>
+            <button
+              onClick={() => onCheckout('monthly')}
+              className="w-full mt-1.5 label-mono hover:text-energy py-1"
+            >
+              ou cartão recorrente
+            </button>
+          </div>
+          <div className="border border-energy rounded-pixel p-4 bg-[#140a05]">
             <div className="label-mono !text-energy">ANUAL</div>
             <div className="font-bold text-2xl mt-1">
               R$ 119,88<span className="text-muted text-xs font-mono">/ano</span>
             </div>
-            <span className="label-mono !text-energy flex items-center gap-1 mt-2">
-              ASSINAR <ExternalLink size={11} />
-            </span>
-          </button>
+            <button
+              onClick={() => onPix('year')}
+              className="w-full mt-3 font-mono uppercase text-xs tracking-widest bg-energy text-black font-bold rounded-pixel py-2.5 flex items-center justify-center gap-1.5 hover:bg-[#ff7a45]"
+            >
+              <QrCode size={13} /> PAGAR NO PIX
+            </button>
+            <button
+              onClick={() => onCheckout('annual')}
+              className="w-full mt-1.5 label-mono !text-energy hover:underline py-1"
+            >
+              ou cartão recorrente
+            </button>
+          </div>
         </div>
         <p className="font-mono text-[11px] text-muted mt-3 leading-relaxed">
-          Ao assinar, você recebe a chave na página de sucesso — cole ela aqui em cima. Ela renova
-          sozinha enquanto a assinatura estiver ativa.
+          Pix/boleto libera o período pago (renova manual). Cartão renova sozinho. Depois de pagar,
+          você recebe a chave na página de sucesso — cole aqui em cima.
         </p>
       </div>
     </div>

@@ -304,6 +304,7 @@ export default function App(): JSX.Element {
             }
             onSetKey={(k) => window.orange.setLicenseKey(k)}
             onCheckout={(p) => window.orange.openCheckout(p)}
+            onPix={(p) => window.orange.openPix(p)}
             onChange={setLicense}
           />
         </Modal>

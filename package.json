@@ -1,6 +1,6 @@
 {
   "name": "orangedelay",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "OrangeDelay — RTMP relay with live-adjustable delay between OBS and Twitch. Anti stream-sniping.",
   "main": "./out/main/index.js",
   "author": "OrangeDelay",

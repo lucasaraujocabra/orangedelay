@@ -116,4 +116,8 @@ export class LicenseManager {
   checkoutUrl(plan: 'monthly' | 'annual'): string {
     return `${BACKEND}/api/checkout?plan=${plan}`
   }
+
+  pixUrl(period: 'month' | 'year'): string {
+    return `${BACKEND}/api/pix/checkout?period=${period}`
+  }
 }

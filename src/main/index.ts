@@ -108,6 +108,9 @@ function registerIpc(): void {
   ipcMain.handle('license:checkout', (_e, plan: 'monthly' | 'annual') =>
     shell.openExternal(license.checkoutUrl(plan))
   )
+  ipcMain.handle('license:pix', (_e, period: 'month' | 'year') =>
+    shell.openExternal(license.pixUrl(period))
+  )
 }
 
 app.whenReady().then(() => {

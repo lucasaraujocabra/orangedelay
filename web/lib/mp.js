@@ -66,3 +66,39 @@ function planFromAmount(pa) {
   if (amt && amt >= 100) return 'annual'
   return 'monthly'
 }
+
+// ---- One-time payment (Checkout Pro) — enables Pix/QR, card and boleto ----
+
+/** Create a one-time Checkout Pro preference → { id, init_point }. */
+export async function createPreference(period, { backUrl }) {
+  const cfg = {
+    month: { title: 'OrangeDelay — 1 mês de acesso', unit_price: Number(process.env.MP_MONTHLY_AMOUNT || 9.99) },
+    year: { title: 'OrangeDelay — 1 ano de acesso', unit_price: Number(process.env.MP_ANNUAL_AMOUNT || 119.88) }
+  }[period]
+  if (!cfg) throw new Error('invalid period')
+  const body = {
+    items: [{ title: cfg.title, quantity: 1, unit_price: cfg.unit_price, currency_id: 'BRL' }],
+    back_urls: { success: backUrl, pending: backUrl, failure: backUrl },
+    auto_return: 'approved',
+    external_reference: period,
+    statement_descriptor: 'ORANGEDELAY'
+  }
+  const r = await fetch(`${MP}/checkout/preferences`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  const data = await r.json()
+  if (!r.ok) throw new Error(`MP preference failed: ${JSON.stringify(data)}`)
+  return { id: data.id, init_point: data.init_point }
+}
+
+/** Fetch a payment → { status, external_reference }. status: approved|pending|rejected */
+export async function getPayment(id) {
+  const r = await fetch(`${MP}/v1/payments/${id}`, {
+    headers: { Authorization: `Bearer ${token()}` }
+  })
+  const data = await r.json()
+  if (!r.ok) throw new Error(`MP payment failed: ${JSON.stringify(data)}`)
+  return { status: data.status, external_reference: data.external_reference }
+}

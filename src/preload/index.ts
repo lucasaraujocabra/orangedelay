@@ -15,6 +15,7 @@ const api = {
   setLicenseKey: (key: string) => ipcRenderer.invoke('license:set', key),
   refreshLicense: () => ipcRenderer.invoke('license:refresh'),
   openCheckout: (plan: 'monthly' | 'annual') => ipcRenderer.invoke('license:checkout', plan),
+  openPix: (period: 'month' | 'year') => ipcRenderer.invoke('license:pix', period),
   onStatus: (cb: (status: RelayStatus) => void) => {
     const handler = (_e: unknown, status: RelayStatus) => cb(status)
     ipcRenderer.on('relay:status', handler)

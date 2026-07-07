@@ -83,15 +83,19 @@
 
     <script>
       const q = new URLSearchParams(location.search)
-      const id = q.get('preapproval_id') || q.get('id')
+      const paymentId = q.get('payment_id') || q.get('collection_id')
+      const preapprovalId = q.get('preapproval_id')
       const show = (el) => {
         for (const x of ['loading', 'ok', 'pending', 'err']) document.getElementById(x).classList.add('hidden')
         document.getElementById(el).classList.remove('hidden')
       }
       async function run() {
-        if (!id) { show('err'); document.getElementById('errmsg').textContent = 'Link inválido (sem preapproval_id).'; return }
+        let url
+        if (paymentId) url = '/api/license/claim-payment?payment_id=' + encodeURIComponent(paymentId)
+        else if (preapprovalId) url = '/api/license/claim?preapproval_id=' + encodeURIComponent(preapprovalId)
+        else { show('err'); document.getElementById('errmsg').textContent = 'Link inválido.'; return }
         try {
-          const r = await fetch('/api/license/claim?preapproval_id=' + encodeURIComponent(id))
+          const r = await fetch(url)
           const d = await r.json()
           if (r.ok && d.key) {
             document.getElementById('key').textContent = d.key

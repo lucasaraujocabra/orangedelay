@@ -71,6 +71,7 @@ export interface OrangeDelayApi {
   setLicenseKey(key: string): Promise<LicenseStatus>
   refreshLicense(): Promise<LicenseStatus>
   openCheckout(plan: 'monthly' | 'annual'): Promise<void>
+  openPix(period: 'month' | 'year'): Promise<void>
   // Main -> Renderer push
   onStatus(cb: (status: RelayStatus) => void): () => void
   onLog(cb: (line: string) => void): () => void
