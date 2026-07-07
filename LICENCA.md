@@ -31,24 +31,22 @@ Variações:
 
 ---
 
-## 2. Ativar as assinaturas pagas (Mercado Pago)
+## 2. Assinaturas pagas (Mercado Pago) — ✅ JÁ ATIVO
 
-Enquanto o token do MP não estiver configurado, os botões "Assinar" mostram *"Assinaturas em ativação"* (não quebram).
+Token de produção + os **2 planos de assinatura** já estão configurados na Vercel:
+- Mensal (R$ 9,99) — `preapproval_plan_id` em `MP_PLAN_MONTHLY`
+- Anual (R$ 119,88) — `preapproval_plan_id` em `MP_PLAN_ANNUAL`
 
-1. Crie/entre na conta **Mercado Pago** (mercadopago.com.br) e verifique identidade (CPF/CNPJ + conta bancária pra receber).
-2. Pegue o **Access Token de PRODUÇÃO**: Mercado Pago → *Seu negócio → Configurações → Credenciais* (ou "Suas integrações" → criar aplicação) → **Access Token** de produção (começa com `APP_USR-...`).
-3. Coloque no Vercel (substitui o placeholder) e redeploy:
-   ```bash
-   cd web
-   printf 'APP_USR-SEU_TOKEN' | vercel env add MP_ACCESS_TOKEN production --force --scope lucas-apps-projects
-   vercel --prod --yes --scope lucas-apps-projects
-   ```
-4. (Opcional, recomendado) Webhook no MP → *Notificações/Webhooks* → URL:
-   `https://orange-delay.vercel.app/api/mp/webhook` — evento **Assinaturas**.
-
-**Como fica o fluxo do cliente:** clica *Assinar* na landing (ou no app) → checkout do Mercado Pago
-(Pix ou cartão) → volta pra `/sucesso.html` → a página **gera e mostra a chave** → ele cola no app.
+**Fluxo do cliente:** clica *Assinar* (landing ou app) → `/api/checkout` redireciona pro
+**checkout de assinatura do Mercado Pago** (ele coloca e-mail + Pix/cartão) → volta pra
+`/sucesso.html?preapproval_id=…` → a página **valida no MP e mostra a chave** → cola no app.
 A chave **renova sozinha** enquanto a assinatura estiver ativa (o app chama `/refresh`, que confere no MP).
+
+**Se um dia trocar o token** (ex: nova conta): atualize `MP_ACCESS_TOKEN`, recrie os planos
+(`POST /preapproval_plan`) e atualize `MP_PLAN_MONTHLY`/`MP_PLAN_ANNUAL`, depois redeploy.
+
+(Opcional) Webhook no MP → *Notificações* → `https://orange-delay.vercel.app/api/mp/webhook`
+(evento **Assinaturas**). Não é obrigatório: a checagem ao vivo é feita pelo `/refresh`.
 
 ---
 
@@ -59,6 +57,8 @@ A chave **renova sozinha** enquanto a assinatura estiver ativa (o app chama `/re
 | `LICENSE_PRIVATE_KEY_B64` | Chave privada Ed25519 (base64 do PEM). **Segredo.** Assina as licenças. |
 | `ADMIN_SECRET` | Senha pra gerar licenças/trials via `/api/admin/mint`. **Segredo.** |
 | `MP_ACCESS_TOKEN` | Access Token de produção do Mercado Pago. **Segredo.** |
+| `MP_PLAN_MONTHLY` | ID do plano mensal (`preapproval_plan`). |
+| `MP_PLAN_ANNUAL` | ID do plano anual (`preapproval_plan`). |
 | `APP_URL` | `https://orange-delay.vercel.app` (base do `back_url`). |
 | `MP_MONTHLY_AMOUNT` | (opcional) padrão `9.99` |
 | `MP_ANNUAL_AMOUNT` | (opcional) padrão `119.88` |
