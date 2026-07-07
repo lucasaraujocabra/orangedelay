@@ -1,0 +1,7 @@
+{
+  "name": "orangedelay-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "OrangeDelay — landing + license/subscription API (Mercado Pago, no DB)"
+}

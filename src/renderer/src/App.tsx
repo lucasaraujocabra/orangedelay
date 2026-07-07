@@ -8,16 +8,21 @@ import {
   KeyRound,
   MonitorPlay,
   ArrowDownToLine,
-  ArrowUpFromLine
+  ArrowUpFromLine,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react'
-import type { RelayStatus, AppConfig } from '../../shared/types'
+import type { RelayStatus, AppConfig, LicenseStatus } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
 import { DelayControl } from './components/DelayControl'
 import { FlowLines } from './components/FlowLines'
 import { KeyPanel } from './components/KeyPanel'
 import { ObsGuide } from './components/ObsGuide'
+import { LicenseModal } from './components/LicenseModal'
 import { SetupWizard } from './components/SetupWizard'
 import { Modal } from './components/Modal'
+
+const PLAN_SHORT: Record<string, string> = { trial: 'TESTE', monthly: 'MENSAL', annual: 'ANUAL' }
 
 function fmtUptime(s: number): string {
   const h = Math.floor(s / 3600)
@@ -34,7 +39,8 @@ export default function App(): JSX.Element {
   const [hasKey, setHasKey] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const [ready, setReady] = useState(false)
-  const [modal, setModal] = useState<null | 'key' | 'obs'>(null)
+  const [modal, setModal] = useState<null | 'key' | 'obs' | 'license'>(null)
+  const [license, setLicense] = useState<LicenseStatus | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
   const bootstrapped = useRef(false)
 
@@ -47,8 +53,11 @@ export default function App(): JSX.Element {
       setDelay(cfg.delaySeconds)
       setHasKey(!!cfg.streamKey)
       setShowWizard(!cfg.setupComplete)
+      setLicense(await window.orange.getLicense())
       setReady(true)
       setStatus(await window.orange.getStatus())
+      // revalida a licença online (renova token / checa assinatura)
+      window.orange.refreshLicense().then(setLicense)
     })()
 
     const offStatus = window.orange.onStatus((s) => {
@@ -67,10 +76,14 @@ export default function App(): JSX.Element {
     setStartError(null)
     if (status?.pushingToTwitch || status?.state === 'RELAYING') {
       await window.orange.stopRelay()
-    } else {
-      const r = await window.orange.startRelay()
-      if (!r.ok) setStartError(r.error ?? 'Não foi possível entrar no ar.')
+      return
     }
+    if (!license?.active) {
+      setModal('license')
+      return
+    }
+    const r = await window.orange.startRelay()
+    if (!r.ok) setStartError(r.error ?? 'Não foi possível entrar no ar.')
   }
 
   const live = status?.pushingToTwitch ?? false
@@ -115,6 +128,28 @@ export default function App(): JSX.Element {
         </div>
 
         <div className="flex items-center gap-5">
+          <button
+            onClick={() => setModal('license')}
+            className={`flex items-center gap-2 px-3 py-2 border rounded-pixel transition-colors ${
+              license?.active ? 'border-edge hover:border-live' : 'border-energy/60 hover:border-energy'
+            }`}
+            title="Licença"
+          >
+            {license?.active ? (
+              <ShieldCheck size={13} className="text-live" />
+            ) : (
+              <ShieldAlert size={13} className="text-energy" />
+            )}
+            <span
+              className={`font-mono text-xs font-bold ${license?.active ? 'text-white' : 'text-energy'}`}
+            >
+              {license?.active
+                ? license.plan === 'trial'
+                  ? `TESTE · ${license.daysLeft}d`
+                  : PLAN_SHORT[license.plan || '']
+                : 'SEM LICENÇA'}
+            </span>
+          </button>
           <div className="flex items-center gap-2">
             <span className="label-mono">OBS</span>
             <span className={`font-mono text-xs font-bold ${obs ? 'text-live' : 'text-muted'}`}>
@@ -169,6 +204,16 @@ export default function App(): JSX.Element {
               </button>
             </div>
 
+            {license && !license.active && (
+              <button
+                onClick={() => setModal('license')}
+                className="font-mono text-[11px] text-energy text-center hover:underline"
+              >
+                {license.state === 'expired'
+                  ? 'Licença expirada — reative pra entrar no ar →'
+                  : 'Ative sua licença ou use um teste de 2 dias →'}
+              </button>
+            )}
             {!hasKey && (
               <button
                 onClick={() => setModal('key')}
@@ -249,6 +294,18 @@ export default function App(): JSX.Element {
       {modal === 'obs' && (
         <Modal title="Como configurar no OBS" tag="ORANGEDELAY // GUIA" onClose={() => setModal(null)}>
           <ObsGuide rtmpPort={config.rtmpPort} />
+        </Modal>
+      )}
+      {modal === 'license' && (
+        <Modal title="Licença & Assinatura" tag="ORANGEDELAY // LICENÇA" onClose={() => setModal(null)}>
+          <LicenseModal
+            status={
+              license ?? { active: false, plan: null, state: 'none', expiresAt: null, daysLeft: null }
+            }
+            onSetKey={(k) => window.orange.setLicenseKey(k)}
+            onCheckout={(p) => window.orange.openCheckout(p)}
+            onChange={setLicense}
+          />
         </Modal>
       )}
     </div>

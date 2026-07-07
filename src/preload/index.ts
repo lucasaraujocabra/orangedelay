@@ -11,6 +11,10 @@ const api = {
   testConnection: () => ipcRenderer.invoke('relay:test'),
   toggleDelay: () => ipcRenderer.invoke('relay:toggle'),
   completeSetup: () => ipcRenderer.invoke('relay:completeSetup'),
+  getLicense: () => ipcRenderer.invoke('license:get'),
+  setLicenseKey: (key: string) => ipcRenderer.invoke('license:set', key),
+  refreshLicense: () => ipcRenderer.invoke('license:refresh'),
+  openCheckout: (plan: 'monthly' | 'annual') => ipcRenderer.invoke('license:checkout', plan),
   onStatus: (cb: (status: RelayStatus) => void) => {
     const handler = (_e: unknown, status: RelayStatus) => cb(status)
     ipcRenderer.on('relay:status', handler)

@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, globalShortcut } from 'electron'
 import path from 'path'
 import Store from 'electron-store'
 import { RelayManager } from './relay'
+import { LicenseManager } from './license'
 import { AppConfig, DEFAULT_CONFIG } from '../shared/types'
 
 const store = new Store<AppConfig>({
@@ -11,6 +12,7 @@ const store = new Store<AppConfig>({
 
 let mainWindow: BrowserWindow | null = null
 let relay: RelayManager | null = null
+const license = new LicenseManager()
 
 function loadConfig(): AppConfig {
   return {
@@ -86,7 +88,12 @@ function registerIpc(): void {
     return applied
   })
 
-  ipcMain.handle('relay:start', () => relay?.startEgress() ?? { ok: false, error: 'not ready' })
+  ipcMain.handle('relay:start', () => {
+    if (!license.isActive()) {
+      return { ok: false, error: 'Licença inativa. Ative sua licença ou inicie um teste.' }
+    }
+    return relay?.startEgress() ?? { ok: false, error: 'not ready' }
+  })
   ipcMain.handle('relay:stop', () => relay?.stopEgress())
   ipcMain.handle('relay:test', () => relay?.testConnection() ?? { ok: false, error: 'not ready' })
   ipcMain.handle('relay:toggle', () => relay?.toggle() ?? false)
@@ -94,6 +101,13 @@ function registerIpc(): void {
     store.set('setupComplete', true)
     relay?.updateConfig({ setupComplete: true })
   })
+
+  ipcMain.handle('license:get', () => license.status())
+  ipcMain.handle('license:set', (_e, key: string) => license.setKey(key))
+  ipcMain.handle('license:refresh', () => license.refresh())
+  ipcMain.handle('license:checkout', (_e, plan: 'monthly' | 'annual') =>
+    shell.openExternal(license.checkoutUrl(plan))
+  )
 }
 
 app.whenReady().then(() => {

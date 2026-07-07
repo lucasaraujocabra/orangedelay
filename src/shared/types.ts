@@ -43,6 +43,18 @@ export const DEFAULT_CONFIG: AppConfig = {
   setupComplete: false
 }
 
+export type LicensePlan = 'trial' | 'monthly' | 'annual'
+
+export interface LicenseStatus {
+  /** True when a valid, non-expired license/trial is present. */
+  active: boolean
+  plan: LicensePlan | null
+  state: 'active' | 'expired' | 'invalid' | 'inactive' | 'none'
+  /** Unix seconds. */
+  expiresAt: number | null
+  daysLeft: number | null
+}
+
 // Renderer -> Main invokable channels
 export interface OrangeDelayApi {
   getStatus(): Promise<RelayStatus>
@@ -54,6 +66,11 @@ export interface OrangeDelayApi {
   testConnection(): Promise<{ ok: boolean; error?: string }>
   toggleDelay(): Promise<boolean>
   completeSetup(): Promise<void>
+  // Licensing
+  getLicense(): Promise<LicenseStatus>
+  setLicenseKey(key: string): Promise<LicenseStatus>
+  refreshLicense(): Promise<LicenseStatus>
+  openCheckout(plan: 'monthly' | 'annual'): Promise<void>
   // Main -> Renderer push
   onStatus(cb: (status: RelayStatus) => void): () => void
   onLog(cb: (line: string) => void): () => void
