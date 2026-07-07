@@ -70,6 +70,10 @@
       .corner::after { bottom: -7px; right: -7px; }
       ::selection { background: #FF5E1F; color: #000; }
 
+      details > summary { list-style: none; }
+      details > summary::-webkit-details-marker { display: none; }
+      details[open] .faq-chevron { transform: rotate(180deg); }
+
       /* hide before animating (only while motion is active) */
       .motion-ready .u-hero,
       .motion-ready .u-mockup,
@@ -112,6 +116,7 @@
           <a href="#comparativo" class="hover:text-energy transition">COMPARATIVO</a>
           <a href="#recursos" class="hover:text-energy transition">RECURSOS</a>
           <a href="#planos" class="hover:text-energy transition">PLANOS</a>
+          <a href="#faq" class="hover:text-energy transition">FAQ</a>
         </div>
         <a href="#download"
           class="btn-press font-mono uppercase text-xs tracking-widest bg-energy text-black font-bold px-5 py-2.5 rounded-pixel hover:bg-[#ff7a45]">
@@ -549,6 +554,138 @@
           </a>
         </div>
         <p class="reveal label !text-neutral-600 mt-8">v0.1.4 · MVP · reporte bugs pro dev</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 08 FAQ -->
+    <section id="faq" class="border-t border-edge px-6 py-24">
+      <div class="max-w-3xl mx-auto">
+        <div class="text-center">
+          <span class="reveal label !text-energy">SUPORTE</span>
+          <h2 class="reveal font-bold text-4xl md:text-5xl leading-tight tracking-tight mt-4">
+            Perguntas frequentes
+          </h2>
+          <p class="reveal text-neutral-400 mt-4 font-mono text-sm">
+            Tire as dúvidas antes de baixar.
+          </p>
+        </div>
+
+        <div class="reveal-group mt-12 flex flex-col gap-3">
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              O que é o OrangeDelay?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Um app pra Windows que fica entre o seu OBS e a Twitch. Ele segura a transmissão num
+              buffer e reenvia com o delay que você escolher — ajustável ao vivo — pra proteger
+              contra teladores (stream snipers) em Valorant, CS2 e outros.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              É um plugin do OBS?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Não. É um app separado que roda em segundo plano. No OBS você aponta a transmissão pro
+              OrangeDelay (servidor <span class="text-white">rtmp://localhost:1935/live</span>) e ele
+              reenvia pra Twitch. Não instala nada dentro do OBS.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              Posso testar de graça?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Sim — teste grátis de 2 dias. Baixe o app e peça sua chave de teste; dá pra validar
+              tudo (delay ao vivo, ir pra Twitch) antes de assinar.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              Com quais plataformas funciona?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Hoje o foco é a <span class="text-white">Twitch</span> — é onde o sniping via stream
+              mais acontece. Suporte a YouTube e multistream (várias plataformas ao mesmo tempo) está
+              chegando.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              Funciona pra multistream (Twitch + YouTube)?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Em breve. A ideia é uma saída do OBS indo pra várias plataformas ao mesmo tempo, cada
+              uma com seu próprio delay. Por enquanto o OrangeDelay foca na Twitch, que é o principal
+              pra anti-snipe.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              Precisa de um PC forte?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Não. O relay é por cópia de stream (sem re-encode), então o consumo de CPU é quase zero
+              e o seu FPS no jogo continua intacto.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              O delay atrapalha meus alertas e o Live PIX?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Não. Alertas, doações, Live PIX e câmera são montados no OBS antes de sair. O
+              OrangeDelay só atrasa o vídeo final — os overlays passam intactos, e você recebe a
+              notificação de doação/PIX na hora.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              Dá pra mudar o delay ao vivo?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Sim, na hora, sem reiniciar o OBS e sem derrubar a stream. Presets de 0/15/30/60s,
+              ajuste fino e atalho global <span class="text-white">Ctrl+Alt+D</span>.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              Como funciona o pagamento?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Pix (QR Code), cartão ou boleto. Mensal R$ 9,99 ou anual R$ 119,88. No cartão a
+              assinatura renova sozinha; no Pix você paga o período e renova quando quiser.
+            </p>
+          </details>
+
+          <details class="group border border-edge rounded-pixel bg-surface">
+            <summary class="flex items-center justify-between px-5 py-4 cursor-pointer font-mono text-sm text-white hover:text-energy">
+              É seguro?
+              <svg class="faq-chevron transition-transform shrink-0 ml-4 text-energy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <p class="px-5 pb-4 font-mono text-[13px] text-neutral-400 leading-relaxed">
+              Sua stream key fica salva só no seu PC. O app ainda não é assinado digitalmente, então
+              o Windows pode pedir "Executar assim mesmo" na primeira vez — é normal em app novo.
+            </p>
+          </details>
+        </div>
       </div>
     </section>
 
