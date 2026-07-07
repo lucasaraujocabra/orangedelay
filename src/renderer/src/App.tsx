@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Radio,
   Power,
   Circle,
   Clock,
-  Zap,
-  KeyRound,
-  MonitorPlay,
   ArrowDownToLine,
   ArrowUpFromLine,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Twitch,
+  Youtube,
+  Layers,
+  Keyboard,
+  Zap
 } from 'lucide-react'
 import type { RelayStatus, AppConfig, LicenseStatus } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
@@ -20,16 +22,13 @@ import { KeyPanel } from './components/KeyPanel'
 import { ObsGuide } from './components/ObsGuide'
 import { LicenseModal } from './components/LicenseModal'
 import { SetupWizard } from './components/SetupWizard'
-import { Modal } from './components/Modal'
+import { Sidebar, type Tab } from './components/Sidebar'
 
 const PLAN_SHORT: Record<string, string> = { trial: 'TESTE', monthly: 'MENSAL', annual: 'ANUAL' }
 
 function fmtUptime(s: number): string {
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
-  const pad = (n: number): string => String(n).padStart(2, '0')
-  return `${pad(h)}:${pad(m)}:${pad(sec)}`
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`
 }
 
 export default function App(): JSX.Element {
@@ -39,9 +38,9 @@ export default function App(): JSX.Element {
   const [hasKey, setHasKey] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const [ready, setReady] = useState(false)
-  const [modal, setModal] = useState<null | 'key' | 'obs' | 'license'>(null)
   const [license, setLicense] = useState<LicenseStatus | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>('dashboard')
   const bootstrapped = useRef(false)
 
   useEffect(() => {
@@ -56,7 +55,6 @@ export default function App(): JSX.Element {
       setLicense(await window.orange.getLicense())
       setReady(true)
       setStatus(await window.orange.getStatus())
-      // revalida a licença online (renova token / checa assinatura)
       window.orange.refreshLicense().then(setLicense)
     })()
 
@@ -79,7 +77,7 @@ export default function App(): JSX.Element {
       return
     }
     if (!license?.active) {
-      setModal('license')
+      setTab('settings')
       return
     }
     const r = await window.orange.startRelay()
@@ -89,7 +87,6 @@ export default function App(): JSX.Element {
   const live = status?.pushingToTwitch ?? false
   const obs = status?.obsConnected ?? false
   const state = status?.state ?? 'OFFLINE'
-  const err = startError || status?.lastError
 
   if (!ready) return <div className="h-full w-full bg-void" />
 
@@ -112,230 +109,325 @@ export default function App(): JSX.Element {
   }
 
   return (
-    <div className="h-full w-full bg-void text-white flex flex-col">
-      {/* ---------------------------------------------------------- header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-edge">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border border-energy rounded-pixel flex items-center justify-center">
-            <Zap size={16} className="text-energy" fill="#FF5E1F" />
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="font-display font-bold text-lg tracking-tight">
-              ORANGE<span className="text-energy">DELAY</span>
-            </span>
-            <span className="label-mono mt-1">RELAY_RTMP // ANTI_SNIPE</span>
-          </div>
-        </div>
+    <div className="h-full w-full bg-void text-white flex">
+      <Sidebar active={tab} onSelect={setTab} />
 
-        <div className="flex items-center gap-5">
-          <button
-            onClick={() => setModal('license')}
-            className={`flex items-center gap-2 px-3 py-2 border rounded-pixel transition-colors ${
-              license?.active ? 'border-edge hover:border-live' : 'border-energy/60 hover:border-energy'
-            }`}
-            title="Licença"
-          >
-            {license?.active ? (
-              <ShieldCheck size={13} className="text-live" />
-            ) : (
-              <ShieldAlert size={13} className="text-energy" />
-            )}
-            <span
-              className={`font-mono text-xs font-bold ${license?.active ? 'text-white' : 'text-energy'}`}
-            >
-              {license?.active
-                ? license.plan === 'trial'
-                  ? `TESTE · ${license.daysLeft}d`
-                  : PLAN_SHORT[license.plan || '']
-                : 'SEM LICENÇA'}
-            </span>
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="label-mono">OBS</span>
-            <span className={`font-mono text-xs font-bold ${obs ? 'text-live' : 'text-muted'}`}>
-              {obs ? 'CONECTADO' : 'AGUARDANDO'}
-            </span>
-          </div>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* top bar */}
+        <div className="flex items-center justify-between px-6 h-16 border-b border-edge shrink-0">
           <div
-            className={`flex items-center gap-2 px-4 py-2 border rounded-pixel ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-pixel ${
               live ? 'border-live' : 'border-edge'
             }`}
           >
             <Circle
-              size={10}
+              size={9}
               className={live ? 'text-live' : 'text-muted'}
               fill={live ? '#22C55E' : 'transparent'}
             />
-            <span className={`font-mono text-sm font-bold ${live ? 'text-live' : 'text-muted'}`}>
-              {live ? 'NO AR' : state === 'ERROR' ? 'ERRO' : 'OFFLINE'}
+            <span className={`font-mono text-xs font-bold ${live ? 'text-live' : 'text-muted'}`}>
+              {live ? 'NO AR · COM DELAY' : state === 'ERROR' ? 'ERRO' : 'OFFLINE'}
             </span>
           </div>
-        </div>
-      </header>
 
-      {/* ---------------------------------------------------------- body (centered) */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="min-h-full flex items-center justify-center p-6 relative">
-          <div className="pointer-events-none absolute top-[22%] left-1/2 -translate-x-1/2 w-[520px] h-[300px] bg-energy/10 blur-[140px] rounded-full" />
-
-          <div className="relative isolate w-full max-w-md flex flex-col gap-5">
-            <DelayControl
-              delay={delay}
-              effectiveDelay={status?.effectiveDelaySeconds ?? 0}
-              live={live}
-              onSet={applyDelay}
-            />
-
-            {/* GO LIVE — com linhas de fluxo animadas no fundo */}
-            <div className="relative py-6">
-              <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] max-w-[94vw] h-[200px] -z-10">
-                <FlowLines active={obs || live} />
-              </div>
-              <button
-                onClick={toggleLive}
-                className={`corner relative z-10 w-full py-5 rounded-pixel font-mono uppercase tracking-[0.22em] font-bold text-base flex items-center justify-center gap-3 transition-colors ${
-                  live
-                    ? 'bg-surface2 border border-energy text-energy hover:bg-[#1a0d05]'
-                    : 'bg-energy border border-energy text-black hover:bg-[#ff7a45]'
-                }`}
-              >
-                {live ? <Power size={18} /> : <Radio size={18} />}
-                {live ? 'SAIR DO AR' : 'ENTRAR NO AR'}
-              </button>
-            </div>
-
-            {license && !license.active && (
-              <button
-                onClick={() => setModal('license')}
-                className="font-mono text-[11px] text-energy text-center hover:underline"
-              >
-                {license.state === 'expired'
-                  ? 'Licença expirada — reative pra entrar no ar →'
-                  : 'Ative sua licença ou use um teste de 2 dias →'}
-              </button>
-            )}
-            {!hasKey && (
-              <button
-                onClick={() => setModal('key')}
-                className="font-mono text-[11px] text-energy text-center hover:underline"
-              >
-                Configure sua chave da Twitch antes de entrar no ar →
-              </button>
-            )}
-            {err && <p className="font-mono text-[11px] text-energy text-center">{err}</p>}
-
-            {/* stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <Stat
-                icon={<ArrowDownToLine size={12} />}
-                label="IN"
-                value={status?.bitrateInKbps ? status.bitrateInKbps.toLocaleString() : '—'}
-                unit="kbps"
-                active={!!status?.bitrateInKbps}
-              />
-              <Stat
-                icon={<ArrowUpFromLine size={12} />}
-                label="OUT"
-                value={status?.bitrateOutKbps ? status.bitrateOutKbps.toLocaleString() : '—'}
-                unit="kbps"
-                active={!!status?.bitrateOutKbps}
-              />
-              <Stat
-                icon={<Clock size={12} />}
-                label="NO AR"
-                value={fmtUptime(status?.uptimeSeconds ?? 0)}
-                active={live}
-              />
-            </div>
-
-            {/* secondary actions -> modals */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setModal('key')}
-                className="pixel-btn flex items-center justify-center gap-2 py-3 relative"
-              >
-                <KeyRound size={15} />
-                CHAVE DA TWITCH
-                <span
-                  className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${
-                    hasKey ? 'bg-live' : 'bg-energy'
-                  }`}
-                />
-              </button>
-              <button
-                onClick={() => setModal('obs')}
-                className="pixel-btn flex items-center justify-center gap-2 py-3"
-              >
-                <MonitorPlay size={15} />
-                CONFIGURAR NO OBS
-              </button>
-            </div>
-
-            <p className="label-mono text-center">
-              ATALHO GLOBAL · <span className="text-energy">CTRL + ALT + D</span> LIGA/DESLIGA
-            </p>
+          <div className="flex items-center gap-2">
+            <MiniStat icon={<ArrowDownToLine size={11} />} label="IN" value={fmtBitrate(status?.bitrateInKbps)} active={!!status?.bitrateInKbps} />
+            <MiniStat icon={<ArrowUpFromLine size={11} />} label="OUT" value={fmtBitrate(status?.bitrateOutKbps)} active={!!status?.bitrateOutKbps} />
+            <MiniStat icon={<Clock size={11} />} label="" value={fmtUptime(status?.uptimeSeconds ?? 0)} active={live} />
+            <button
+              onClick={() => setTab('settings')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-pixel ml-1 ${
+                license?.active ? 'border-edge hover:border-live' : 'border-energy/60 hover:border-energy'
+              }`}
+            >
+              {license?.active ? (
+                <ShieldCheck size={12} className="text-live" />
+              ) : (
+                <ShieldAlert size={12} className="text-energy" />
+              )}
+              <span className={`font-mono text-[11px] font-bold ${license?.active ? 'text-white' : 'text-energy'}`}>
+                {license?.active
+                  ? license.plan === 'trial'
+                    ? `TESTE · ${license.daysLeft}d`
+                    : PLAN_SHORT[license.plan || '']
+                  : 'SEM LICENÇA'}
+              </span>
+            </button>
           </div>
         </div>
-      </main>
 
-      {/* ---------------------------------------------------------- modals */}
-      {modal === 'key' && (
-        <Modal title="Chave da Twitch" tag="ORANGEDELAY // CONFIG" onClose={() => setModal(null)}>
-          <KeyPanel
-            hasKey={hasKey}
-            onSaveKey={async (k) => {
-              await window.orange.setStreamKey(k)
-              setHasKey(true)
-            }}
-            onTest={() => window.orange.testConnection()}
-          />
-        </Modal>
-      )}
-      {modal === 'obs' && (
-        <Modal title="Como configurar no OBS" tag="ORANGEDELAY // GUIA" onClose={() => setModal(null)}>
-          <ObsGuide rtmpPort={config.rtmpPort} />
-        </Modal>
-      )}
-      {modal === 'license' && (
-        <Modal title="Licença & Assinatura" tag="ORANGEDELAY // LICENÇA" onClose={() => setModal(null)}>
-          <LicenseModal
-            status={
-              license ?? { active: false, plan: null, state: 'none', expiresAt: null, daysLeft: null }
-            }
-            onSetKey={(k) => window.orange.setLicenseKey(k)}
-            onCheckout={(p) => window.orange.openCheckout(p)}
-            onPix={(p) => window.orange.openPix(p)}
-            onChange={setLicense}
-          />
-        </Modal>
-      )}
+        {/* content */}
+        <main className="flex-1 overflow-y-auto">
+          {tab === 'dashboard' && (
+            <DashboardView
+              delay={delay}
+              status={status}
+              live={live}
+              obs={obs}
+              licensed={!!license?.active}
+              startError={startError}
+              onSet={applyDelay}
+              onToggle={toggleLive}
+              onLicense={() => setTab('settings')}
+            />
+          )}
+
+          {tab === 'setup' && (
+            <TabView title="Setup" subtitle="Configure o OBS e a chave da Twitch">
+              <div className="flex flex-col gap-4 max-w-2xl">
+                <div className="panel corner p-5">
+                  <span className="label-mono">SEÇÃO // CHAVE DA TWITCH</span>
+                  <div className="mt-4">
+                    <KeyPanel
+                      hasKey={hasKey}
+                      onSaveKey={async (k) => {
+                        await window.orange.setStreamKey(k)
+                        setHasKey(true)
+                      }}
+                      onTest={() => window.orange.testConnection()}
+                    />
+                  </div>
+                </div>
+                <div className="panel corner p-5">
+                  <ObsGuide rtmpPort={config.rtmpPort} />
+                </div>
+              </div>
+            </TabView>
+          )}
+
+          {tab === 'settings' && (
+            <TabView title="Config" subtitle="Licença, assinatura e app">
+              <div className="max-w-2xl panel corner p-5">
+                <LicenseModal
+                  status={license ?? { active: false, plan: null, state: 'none', expiresAt: null, daysLeft: null }}
+                  onSetKey={(k) => window.orange.setLicenseKey(k)}
+                  onCheckout={(p) => window.orange.openCheckout(p)}
+                  onPix={(p) => window.orange.openPix(p)}
+                  onChange={setLicense}
+                />
+              </div>
+              <p className="label-mono mt-4">ORANGEDELAY · MVP</p>
+            </TabView>
+          )}
+
+          {tab === 'help' && (
+            <TabView title="Ajuda" subtitle="Atalhos e suporte">
+              <div className="max-w-2xl flex flex-col gap-4">
+                <div className="panel corner p-5 flex items-center gap-3">
+                  <Keyboard size={18} className="text-energy" />
+                  <div className="font-mono text-sm">
+                    <span className="text-energy">Ctrl + Alt + D</span>
+                    <span className="text-neutral-400"> — liga/desliga o delay de dentro do jogo</span>
+                  </div>
+                </div>
+                <div className="panel corner p-5 font-mono text-sm text-neutral-400 leading-relaxed">
+                  Mantenha o OrangeDelay aberto em segundo plano durante toda a live. Ele é quem
+                  recebe do OBS e envia pra Twitch — se fechar, a stream cai.
+                </div>
+              </div>
+            </TabView>
+          )}
+
+          {(tab === 'multistream' || tab === 'overlay' || tab === 'streamdeck') && (
+            <ComingSoon tab={tab} />
+          )}
+        </main>
+      </div>
     </div>
   )
 }
 
-function Stat({
+/* ------------------------------------------------------------------ views */
+
+function DashboardView({
+  delay,
+  status,
+  live,
+  obs,
+  licensed,
+  startError,
+  onSet,
+  onToggle,
+  onLicense
+}: {
+  delay: number
+  status: RelayStatus | null
+  live: boolean
+  obs: boolean
+  licensed: boolean
+  startError: string | null
+  onSet: (s: number) => void
+  onToggle: () => void
+  onLicense: () => void
+}): JSX.Element {
+  const err = startError || status?.lastError
+  const twitchState = live ? 'NO AR' : obs ? 'PRONTO' : 'AGUARDANDO'
+  return (
+    <div className="p-8 flex flex-col items-center">
+      <div className="w-full max-w-lg flex flex-col gap-5 isolate">
+        {/* mode toggle */}
+        <div className="flex items-center justify-center">
+          <div className="inline-flex border border-edge rounded-pixel overflow-hidden font-mono text-xs">
+            <span className="px-4 py-2 bg-[#1a0d05] text-energy font-bold uppercase tracking-wider">
+              Modo instantâneo
+            </span>
+            <span className="px-4 py-2 text-muted uppercase tracking-wider flex items-center gap-1.5">
+              Overlay <span className="text-[8px] border border-edge px-1 rounded-pixel">soon</span>
+            </span>
+          </div>
+        </div>
+
+        <DelayControl delay={delay} effectiveDelay={status?.effectiveDelaySeconds ?? 0} live={live} onSet={onSet} />
+
+        {/* GO LIVE + flow lines */}
+        <div className="relative py-6">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] max-w-[90vw] h-[190px] -z-10">
+            <FlowLines active={obs || live} />
+          </div>
+          <button
+            onClick={onToggle}
+            className={`corner relative z-10 w-full py-5 rounded-pixel font-mono uppercase tracking-[0.22em] font-bold text-base flex items-center justify-center gap-3 transition-colors ${
+              live
+                ? 'bg-surface2 border border-energy text-energy hover:bg-[#1a0d05]'
+                : 'bg-energy border border-energy text-black hover:bg-[#ff7a45]'
+            }`}
+          >
+            {live ? <Power size={18} /> : <Radio size={18} />}
+            {live ? 'SAIR DO AR' : 'ENTRAR NO AR'}
+          </button>
+        </div>
+
+        {!licensed && (
+          <button onClick={onLicense} className="font-mono text-[11px] text-energy text-center hover:underline -mt-2">
+            Ative sua licença ou use um teste de 2 dias →
+          </button>
+        )}
+        {err && <p className="font-mono text-[11px] text-energy text-center -mt-2">{err}</p>}
+
+        {/* plataformas */}
+        <div className="mt-2">
+          <span className="label-mono">PLATAFORMAS DE TRANSMISSÃO</span>
+          <div className="grid grid-cols-3 gap-3 mt-3">
+            <PlatformCard
+              name="Twitch"
+              icon={<Twitch size={16} />}
+              state={twitchState}
+              stateColor={live ? 'text-live' : obs ? 'text-energy' : 'text-muted'}
+              delay={live ? `${status?.effectiveDelaySeconds ?? 0}s` : '—'}
+              active
+            />
+            <PlatformCard name="YouTube" icon={<Youtube size={16} />} state="EM BREVE" stateColor="text-muted" delay="—" />
+            <PlatformCard name="Kick" icon={<Radio size={16} />} state="EM BREVE" stateColor="text-muted" delay="—" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PlatformCard({
+  name,
+  icon,
+  state,
+  stateColor,
+  delay,
+  active
+}: {
+  name: string
+  icon: JSX.Element
+  state: string
+  stateColor: string
+  delay: string
+  active?: boolean
+}): JSX.Element {
+  return (
+    <div className={`border rounded-pixel bg-surface p-3 ${active ? 'border-edge' : 'border-edge opacity-60'}`}>
+      <div className="flex items-center gap-2">
+        <span className={active ? 'text-energy' : 'text-muted'}>{icon}</span>
+        <span className="font-mono text-xs font-bold">{name}</span>
+      </div>
+      <div className={`font-mono text-[10px] uppercase tracking-wider mt-2 ${stateColor}`}>{state}</div>
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-edge">
+        <span className="label-mono">DELAY</span>
+        <span className="font-mono text-xs text-white">{delay}</span>
+      </div>
+    </div>
+  )
+}
+
+function ComingSoon({ tab }: { tab: Tab }): JSX.Element {
+  const meta: Record<string, { title: string; desc: string }> = {
+    multistream: {
+      title: 'Multi-stream',
+      desc: 'Transmita pra Twitch, YouTube e Kick ao mesmo tempo — cada uma com seu próprio delay. Chegando em breve.'
+    },
+    overlay: {
+      title: 'Overlay',
+      desc: 'Um contador de delay na tela pra você e sua audiência. Chegando em breve.'
+    },
+    streamdeck: {
+      title: 'Stream Deck',
+      desc: 'Controle o delay direto do seu Stream Deck. Chegando em breve.'
+    }
+  }
+  const m = meta[tab]
+  return (
+    <div className="h-full grid place-items-center p-8">
+      <div className="text-center max-w-md">
+        <div className="w-14 h-14 mx-auto border border-energy rounded-pixel grid place-items-center">
+          <Layers size={24} className="text-energy" strokeWidth={1.5} />
+        </div>
+        <h2 className="font-display font-bold text-2xl mt-5">{m.title}</h2>
+        <span className="label-mono !text-energy">EM BREVE</span>
+        <p className="font-mono text-sm text-neutral-400 mt-4 leading-relaxed">{m.desc}</p>
+      </div>
+    </div>
+  )
+}
+
+function TabView({
+  title,
+  subtitle,
+  children
+}: {
+  title: string
+  subtitle: string
+  children: ReactNode
+}): JSX.Element {
+  return (
+    <div className="p-8">
+      <div className="flex items-center gap-3 mb-6">
+        <Zap size={18} className="text-energy" fill="#FF5E1F" />
+        <div>
+          <h1 className="font-display font-bold text-xl leading-none">{title}</h1>
+          <span className="label-mono">{subtitle}</span>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function MiniStat({
   icon,
   label,
   value,
-  unit,
   active
 }: {
   icon: JSX.Element
   label: string
   value: string
-  unit?: string
   active?: boolean
 }): JSX.Element {
   return (
-    <div className="border border-edge rounded-pixel bg-surface px-3 py-2.5 flex flex-col gap-1">
-      <span className={`label-mono flex items-center gap-1.5 ${active ? '!text-energy' : ''}`}>
-        {icon}
-        {label}
-      </span>
-      <span className="font-mono text-base tabular-nums text-white leading-none">
-        {value}
-        {unit && <span className="text-muted text-[10px] ml-1">{unit}</span>}
-      </span>
+    <div className="flex items-center gap-1.5 px-2.5 py-1.5 border border-edge rounded-pixel">
+      <span className={active ? 'text-energy' : 'text-muted'}>{icon}</span>
+      {label && <span className="label-mono">{label}</span>}
+      <span className="font-mono text-[11px] text-white tabular-nums">{value}</span>
     </div>
   )
+}
+
+function fmtBitrate(kbps?: number): string {
+  return kbps ? kbps.toLocaleString() : '—'
 }
